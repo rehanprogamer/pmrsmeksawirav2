@@ -1055,23 +1055,32 @@
     <!-- ===================================================== -->
     <section id="page-daftar" class="page-section space-y-5">
 
-      <!-- ===== GERBANG AKSES: status dikontrol ADMIN (satu tombol, berlaku untuk SEMUA pengunjung setelah "Update GitHub") ===== -->
+      <!-- ===== GERBANG AKSES: kode akses lokal, langsung jalan di HP masing-masing, TANPA perlu sync GitHub ===== -->
       <div id="lock-daftar" class="space-y-4">
         <div class="bg-pmr rounded-2xl p-4 text-white shadow-md">
           <h2 class="font-extrabold text-lg flex items-center gap-2">
             <i data-lucide="lock" class="w-5 h-5"></i> Daftar Anggota
           </h2>
-          <p class="text-xs text-red-100 mt-1">Pendaftaran anggota baru sedang ditutup.</p>
+          <p class="text-xs text-red-100 mt-1">Pendaftaran anggota baru sedang dibatasi.</p>
         </div>
 
-        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center space-y-2">
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center space-y-3">
           <div class="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style="background-color:var(--pmr-red-light)">
             <i data-lucide="shield-alert" class="w-6 h-6 text-pmr"></i>
           </div>
-          <p class="text-sm font-bold text-gray-800">Pendaftaran sedang ditutup</p>
+          <p class="text-sm font-bold text-gray-800">Halaman ini dibatasi</p>
           <p class="text-xs text-gray-500 leading-relaxed">
-            Pendaftaran anggota baru sudah ditutup menjelang Diklat. Halaman ini akan otomatis terbuka kembali kalau pengurus mengaktifkan pendaftaran.
+            Pendaftaran anggota baru sudah ditutup menjelang Diklat. Halaman ini hanya bisa diakses oleh pengurus/mentor yang memegang kode akses.
           </p>
+          <div class="pt-1">
+            <input id="lock-daftar-kode" type="password" placeholder="Masukkan kode akses"
+              class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-pmr focus:border-transparent">
+            <button onclick="bukaKunciDaftar()"
+              class="ripple-container w-full bg-pmr text-white font-bold text-sm py-2.5 rounded-lg flex items-center justify-center gap-2 mt-2 active:scale-[0.98] transition shadow-sm">
+              <i data-lucide="key-round" class="w-4 h-4"></i> Buka Akses
+            </button>
+            <p id="lock-daftar-error" class="hidden text-xs text-red-600 font-medium text-center mt-2">Kode akses salah, coba lagi ya!</p>
+          </div>
         </div>
       </div>
 
@@ -1366,10 +1375,6 @@
         <i data-lucide="phone" class="w-4 h-4"></i>
         <span class="text-[9px] font-semibold">Nomor Admin</span>
       </button>
-      <button onclick="toggleAksesDaftar()" id="btn-toggle-daftar" class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 shrink-0">
-        <i data-lucide="lock" class="w-4 h-4"></i>
-        <span class="text-[9px] font-semibold">Pendaftaran</span>
-      </button>
       <button onclick="unduhHTMLBaru()" class="flex flex-col items-center gap-0.5 px-2.5 py-1.5 shrink-0">
         <i data-lucide="download" class="w-4 h-4"></i>
         <span class="text-[9px] font-semibold">Unduh HTML</span>
@@ -1647,7 +1652,7 @@
   jalankanAman(initTestimoni, 'initTestimoni');
   jalankanAman(initSosialMedia, 'initSosialMedia');
   jalankanAman(initAdminWA, 'initAdminWA');
-  jalankanAman(initAksesDaftar, 'initAksesDaftar');
+  jalankanAman(initBukaDaftarViaLink, 'initBukaDaftarViaLink');
   jalankanAman(initQRCode, 'initQRCode');
   jalankanAman(initPengumuman, 'initPengumuman');
   jalankanAman(initModeAdminDariURL, 'initModeAdminDariURL');
@@ -1682,9 +1687,9 @@
     var navAktif = document.querySelector('[data-nav="' + nama + '"]');
     if (navAktif) navAktif.classList.add('active-nav');
 
-    // Halaman "Daftar" dibatasi aksesnya, cek status kunci setiap kali dibuka
+    // Halaman "Daftar" dibatasi aksesnya, cek kode akses setiap kali dibuka
     if (nama === 'daftar') {
-      tampilkanStatusKunciDaftar();
+      tampilkanGerbangDaftar();
     }
 
     // Scroll ke atas setiap pindah halaman
@@ -1695,25 +1700,19 @@
   }
 
   // ==================================================
-  // FITUR BARU: GERBANG AKSES HALAMAN "DAFTAR ANGGOTA"
-  // Sesuai arahan ketua PMR: menu pendaftaran TIDAK dihapus, tapi statusnya
-  // (buka/tutup) dikontrol admin lewat toolbar. Sekali admin menekan tombol
-  // "Pendaftaran" lalu "Update GitHub", status itu berlaku untuk SEMUA
-  // pengunjung situs (bukan cuma HP admin) - sama seperti fitur Jadwal, Galeri, dll.
+  // GERBANG AKSES HALAMAN "DAFTAR ANGGOTA"
+  // Kode akses dicek LANGSUNG di HP masing-masing orang - TIDAK butuh
+  // "Update GitHub", tidak butuh sinkronisasi apapun, jadi selalu jalan.
+  // Ganti kode di bawah kapan saja, lalu bagikan ke pengurus/mentor.
   // ==================================================
-  var statusAksesDaftar = 'tertutup'; // 'terbuka' atau 'tertutup'
+  var KODE_AKSES_DAFTAR = 'PMRWIRA2025';
 
-  function initAksesDaftar() {
-    var tersimpan = ambilData('pmrAksesDaftarStatus');
-    if (tersimpan === 'terbuka' || tersimpan === 'tertutup') statusAksesDaftar = tersimpan;
-    perbaruiTombolAksesDaftar();
-  }
-
-  function tampilkanStatusKunciDaftar() {
+  function tampilkanGerbangDaftar() {
     var lock = document.getElementById('lock-daftar');
     var konten = document.getElementById('konten-daftar');
     if (!lock || !konten) return;
-    if (statusAksesDaftar === 'terbuka') {
+    var sudahBuka = localStorage.getItem('pmrAksesDaftarTerbuka') === 'ya';
+    if (sudahBuka) {
       lock.classList.add('hidden');
       konten.classList.remove('hidden');
     } else {
@@ -1723,25 +1722,35 @@
     refreshIcons();
   }
 
-  function perbaruiTombolAksesDaftar() {
-    var btn = document.getElementById('btn-toggle-daftar');
-    if (!btn) return;
-    var terbuka = statusAksesDaftar === 'terbuka';
-    btn.innerHTML =
-      '<i data-lucide="' + (terbuka ? 'lock-open' : 'lock') + '" class="w-4 h-4"></i>' +
-      '<span class="text-[9px] font-semibold">' + (terbuka ? 'Tutup Daftar' : 'Buka Daftar') + '</span>';
-    refreshIcons();
+  function bukaKunciDaftar() {
+    var input = document.getElementById('lock-daftar-kode');
+    var error = document.getElementById('lock-daftar-error');
+    var kode = (input.value || '').trim();
+    if (kode === KODE_AKSES_DAFTAR) {
+      localStorage.setItem('pmrAksesDaftarTerbuka', 'ya');
+      error.classList.add('hidden');
+      input.value = '';
+      tampilkanGerbangDaftar();
+    } else {
+      error.classList.remove('hidden');
+    }
   }
 
-  function toggleAksesDaftar() {
-    statusAksesDaftar = (statusAksesDaftar === 'terbuka') ? 'tertutup' : 'terbuka';
-    perbaruiTombolAksesDaftar();
-    tampilkanStatusKunciDaftar();
-    tampilkanToast(
-      statusAksesDaftar === 'terbuka'
-        ? 'Pendaftaran dibuka (lokal). Tekan "Update GitHub" supaya berlaku untuk semua orang.'
-        : 'Pendaftaran ditutup (lokal). Tekan "Update GitHub" supaya berlaku untuk semua orang.'
-    );
+  // ==================================================
+  // BUKA OTOMATIS LEWAT LINK KHUSUS (tanpa perlu ketik kode manual)
+  // Pas waktunya pendaftaran resmi dibuka, bagikan link ini ke calon anggota:
+  //   https://rehanprogamer.github.io/pmrsmeksawirav2/?daftar=PMRWIRA2025
+  // (ganti "PMRWIRA2025" kalau kamu ganti KODE_AKSES_DAFTAR di atas)
+  // Siapa pun yang tap link itu otomatis "terbuka" akses Daftar-nya, tanpa
+  // perlu ketik kode dan tanpa perlu admin toggle apapun.
+  // ==================================================
+  function initBukaDaftarViaLink() {
+    var params = new URLSearchParams(window.location.search);
+    var kodeDariLink = params.get('daftar');
+    if (kodeDariLink && kodeDariLink === KODE_AKSES_DAFTAR) {
+      localStorage.setItem('pmrAksesDaftarTerbuka', 'ya');
+      gantiHalaman('daftar');
+    }
   }
 
   // ==================================================
@@ -1898,9 +1907,8 @@
     var navBeranda = document.querySelector('[data-nav="beranda"]');
     if (navBeranda) navBeranda.classList.add('active-nav');
 
-    // Gerbang akses Daftar juga dipaksa sinkron sesuai statusAksesDaftar,
-    // supaya tidak ke-freeze dalam kondisi yang salah
-    tampilkanStatusKunciDaftar();
+    // Gerbang akses Daftar juga disinkronkan ulang tampilannya
+    tampilkanGerbangDaftar();
   }
 
   // ==================================================
@@ -1987,8 +1995,7 @@
       pmrPrestasi: JSON.stringify(daftarPrestasi),
       pmrTestimoni: JSON.stringify(daftarTestimoni),
       pmrPengumuman: (function () { var el = document.getElementById('edit-pengumuman'); return el ? el.textContent : ''; })(),
-      pmrSosialLinkBio: localStorage.getItem('pmrSosialLinkBio') || '',
-      pmrAksesDaftarStatus: statusAksesDaftar
+      pmrSosialLinkBio: localStorage.getItem('pmrSosialLinkBio') || ''
     };
     var elDataBawaan = document.getElementById('data-bawaan');
     if (elDataBawaan) elDataBawaan.textContent = JSON.stringify(dataBawaanTerbaru);
