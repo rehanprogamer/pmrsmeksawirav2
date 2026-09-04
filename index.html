@@ -1915,9 +1915,9 @@
   // FITUR BARU: UPDATE LANGSUNG KE GITHUB (TANPA UNDUH-UPLOAD MANUAL)
   // ==================================================
   // Isi 3 hal ini sekali di awal (cari punya kamu di alamat repo GitHub-nya):
-  var GITHUB_OWNER = 'rehanprogamer';           // username GitHub kamu
-  var GITHUB_REPO = 'rehanprogamer.github.io';  // nama repository-nya
-  var GITHUB_PATH = 'index.html';               // nama file di repo itu
+  var GITHUB_OWNER = 'rehanprogamer';   // username GitHub kamu
+  var GITHUB_REPO = 'pmrsmeksawirav2';  // nama repository-nya (repo terpisah, bukan rehanprogamer.github.io)
+  var GITHUB_PATH = 'index.html';       // file ada di root repo ini
 
   function mintaTokenGitHub() {
     var token = localStorage.getItem('pmrGitHubToken');
@@ -1966,7 +1966,7 @@
 
     var htmlBaru = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
 
-    tampilkanToast('Mengirim ke GitHub...');
+    tampilkanToast('Mengirim ke GitHub (' + GITHUB_PATH + ')...');
 
     var apiUrl = 'https://api.github.com/repos/' + GITHUB_OWNER + '/' + GITHUB_REPO + '/contents/' + GITHUB_PATH;
 
